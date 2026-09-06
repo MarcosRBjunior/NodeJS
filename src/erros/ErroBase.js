@@ -1,0 +1,10 @@
+export class ErroBase extends Error {
+  constructor(mensagem = 'Erro interno do servidor', status = 500) {
+    super(mensagem);
+    this.status = status;
+  }
+
+  enviarResposta(res) {
+    res.status(this.status).json({ erro: this.message });
+  }
+}
