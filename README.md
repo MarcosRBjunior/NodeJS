@@ -1,46 +1,101 @@
-# NodeJS Project
+# bordeless
 
-Este projeto foi desenvolvido em Node.js e contém os seguintes arquivos e funcionalidades:
+API REST de uma livraria — CRUD de **autores**, **editoras** e **livros**, e registro de **vendas** com desconto por forma de pagamento, verificação de estoque e notificação da editora por email.
 
-## Estrutura do Projeto
+## De onde veio cada parte
 
-- **index.js**: Arquivo principal de entrada do projeto.
-- **person.js**: Implementação relacionada a pessoas (detalhes da lógica podem ser descritos aqui).
-- **package.json**: Gerenciamento de dependências e scripts do projeto.
-- **modules/**: Pasta com módulos auxiliares.
-  - **fs.js**: Funções relacionadas ao sistema de arquivos.
-  - **path.js**: Funções relacionadas a manipulação de caminhos.
-  - **test/**: Pasta de testes.
-    - **test.txt**: Arquivo de teste.
+Este projeto reúne, num único código, a evolução do mesmo exercício em 3 repositórios de estudo separados:
 
-## Como rodar o projeto
+| Repositório | O que contribuiu para o `bordeless` |
+| --- | --- |
+| [`Teste_E2E`](https://github.com/MarcosRBjunior/Teste_E2E) | Esqueleto do projeto: arquitetura em camadas (`domain/gateways/services/controllers/routes`) sobre PostgreSQL + Knex, injeção de dependência ponta a ponta e a pirâmide de testes (unit/integration/e2e) com `node:test` + Supertest. |
+| [`API-validation`](https://github.com/MarcosRBjunior/API-validation) | Tratamento de erro centralizado (`ErroBase`/`RequisicaoIncorreta`/`NaoEncontrado`) e paginação — portados de Mongoose para Postgres/Knex. |
+| [`BibliotecaCrud`](https://github.com/MarcosRBjunior/BibliotecaCrud) | Conceito de busca de livros por filtro, adaptado ao schema relacional em `GET /livros/busca`. |
 
-1. Instale as dependências:
-   ```bash
-   npm install
-   ```
-2. Execute o projeto:
-   ```bash
-   npm start
-   ```
-   Ou, para ambiente de desenvolvimento:
-   ```bash
-   npm run start:dev
-   ```
+Um quarto repositório, [`API_Sequelize`](https://github.com/MarcosRBjunior/API_Sequelize), foi avaliado mas **não** foi incorporado aqui: é um exercício de domínio totalmente diferente (matrícula escolar — Pessoas/Cursos/Categorias/Matrículas via Sequelize), sem relação com livraria além de usar Node/Express. Ele continua existindo como projeto independente no GitHub.
 
-## Funcionalidades
+A junção não foi só colar pastas lado a lado: os controllers, que faziam `try/catch` + `res.status(500)` ad hoc, passaram a delegar para o middleware central de erros; e dois bugs conhecidos do `Teste_E2E` original (`autor_id`/`editora_id` inexistentes retornando 500 em vez de 400) foram resolvidos de graça pela convergência com o tratamento de erro do `API-validation` — a constraint de FK do Postgres agora é traduzida para `400` (veja `src/middlewares/manipuladorDeErros.js`).
 
-- Manipulação de arquivos e diretórios.
-- Estrutura modularizada para facilitar manutenção e expansão.
+## Arquitetura
 
-## Como contribuir
+```text
+HTTP request
+  │
+  ├─► routes          → Express Router, liga controller a service
+  │
+  ├─► controller       → tradução req/res, validação de entrada, next(erro)
+  │         │
+  │         └─► service         → orquestra models + gateways,
+  │                                não conhece Express
+  │                  │
+  │                  ├─► domain           → regras de negócio puras
+  │                  │                       (cálculo de desconto)
+  │                  │
+  │                  ├─► model             → Knex query builder
+  │                  │
+  │                  └─► gateway           → sistemas externos
+  │                                          (email, estoque — mockados em teste)
+  │
+  └─► manipuladorDeErros → mapeia erros customizados e códigos do Postgres
+                            para status HTTP corretos
+```
 
-1. Faça um fork do projeto.
-2. Crie uma branch para sua feature (`git checkout -b minha-feature`).
-3. Faça commit das suas alterações (`git commit -m 'Minha nova feature'`).
-4. Faça push para a branch (`git push origin minha-feature`).
-5. Abra um Pull Request.
+```text
+src/
+  server.js, app.js       # bootstrap e factory do Express (injeta gateways)
+  config/, db/             # configuração e conexão com Postgres (Knex)
+  domain/                  # regras de negócio puras (sem I/O)
+  gateways/                # integrações externas (email, estoque)
+  erros/, middlewares/     # classes de erro + tratamento central + paginação
+  models/, services/, controllers/, routes/   # Autores, Editoras, Livros, Vendas
 
----
+test/
+  unit/           # lógica pura, sem banco, sem HTTP
+  integration/    # camadas se comunicando (model+banco, controller+service mockado)
+  e2e/            # HTTP real via Supertest, banco de teste real
+  support/        # fábricas de dados, mocks e utilitários de teste
+```
 
-Para dúvidas ou sugestões, abra uma issue no repositório.
+## Endpoints
+
+| Recurso | Método | Rota | Descrição |
+| --- | --- | --- | --- |
+| Autores | GET | `/autores` | Lista autores (paginação: `?limite=&pagina=&ordenacao=coluna:asc\|desc`) |
+| Autores | GET | `/autores/:id` | Busca um autor pelo id |
+| Autores | POST | `/autores` | Cadastra um autor (`nome`, `nacionalidade`) |
+| Editoras | GET | `/editoras` | Lista editoras (paginação) |
+| Editoras | GET | `/editoras/:id` | Busca uma editora pelo id |
+| Editoras | POST | `/editoras` | Cadastra uma editora (`nome`, `cidade`, `email`) |
+| Livros | GET | `/livros` | Lista livros (paginação) |
+| Livros | GET | `/livros/busca` | Filtra por `titulo`, `autor_id`, `editora_id`, `minPaginas`, `maxPaginas` (paginação) |
+| Livros | GET | `/livros/:id` | Busca um livro pelo id |
+| Livros | POST | `/livros` | Cadastra um livro (`titulo`, `paginas`, `autor_id`, `editora_id`) |
+| Vendas | GET | `/vendas` | Lista vendas (paginação) |
+| Vendas | GET | `/vendas/:id` | Busca uma venda pelo id |
+| Vendas | POST | `/vendas` | Registra uma venda (`idLivro`, `valor`, `modoPagamento`) — aplica desconto, consulta estoque e notifica a editora por email |
+
+Descontos por modo de pagamento: `DINHEIRO` 10%, `PIX` 8%, `BOLETO` 5%, `CARTAO_DEBITO` 3%, `CARTAO_CREDITO` 0%.
+
+## Como rodar
+
+```bash
+npm install
+cp .env.example .env
+cp .env.example .env.test   # depois aponte o DATABASE_URL para o banco "test"
+
+docker compose up -d        # Postgres, com os bancos "bordeless" e "test"
+npm start                   # http://localhost:3000
+```
+
+## Testes
+
+```bash
+npm test                    # unit -> integration -> e2e
+npm run lint
+```
+
+`test:integration` e `test:e2e` rodam com `--test-concurrency=1`: os arquivos compartilham o mesmo banco de teste Postgres e truncam tabelas entre `it`s, então rodar em série evita condição de corrida entre suítes.
+
+## CI/CD
+
+`.github/workflows/ci.yml` roda em todo push/PR: `lint`, `test:unit` (sem banco), e `test:integration`/`test:e2e` (Postgres descartável como serviço do GitHub Actions, schema criado via `psql` a partir de `docker/init/*.sql`).
