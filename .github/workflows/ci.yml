@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  test-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Gerar .env.test
+        run: |
+          echo "DATABASE_URL=postgres://postgres:postgres@localhost:5432/test" >> .env.test
+          echo "PORT=3001" >> .env.test
+          echo "NODE_ENV=test" >> .env.test
+      - run: npm run test:unit
+
+  test-integration-end-to-end:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: bordeless
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Criar tabelas no banco bordeless
+        run: psql -h localhost -U postgres -d bordeless -f docker/init/01-create-tables.sql
+        env:
+          PGPASSWORD: postgres
+      - name: Criar banco de testes a partir do template bordeless
+        run: psql -h localhost -U postgres -d bordeless -f docker/init/02-create-test-db.sql
+        env:
+          PGPASSWORD: postgres
+      - name: Gerar .env.test
+        run: |
+          echo "DATABASE_URL=postgres://postgres:postgres@localhost:5432/test" >> .env.test
+          echo "PORT=3001" >> .env.test
+          echo "NODE_ENV=test" >> .env.test
+      - run: npm run test:integration
+      - run: npm run test:e2e
