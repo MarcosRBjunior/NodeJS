@@ -35,7 +35,9 @@ npm run test:e2e            # idem
 npm test                    # os três em sequência
 ```
 
-Resultado esperado (validado na FASE 1): `npm test` → 29 testes, 28 pass, 1 `todo` intencional (validação de e-mail de editora), 0 fail.
+`.env`/`.env.test` também precisam de `JWT_SECRET` (qualquer string em dev/teste; troque por um segredo forte em produção) — ver `.env.example`.
+
+Resultado esperado (validado na FASE 1, antes da feature de login): `npm test` → 29 testes, 28 pass, 1 `todo` intencional (validação de e-mail de editora), 0 fail. Depois da feature de login de cliente, a suíte cresceu para 78 testes (unit + integration + e2e), continua 0 fail.
 
 ## Frontend
 
@@ -45,11 +47,21 @@ npm install
 
 npm run dev                 # http://localhost:5173, consome a API em VITE_API_URL (default http://localhost:3000)
 npm run build                # gera dist/ — validado: ~177ms, bundle único ~251KB JS / 8KB CSS
-npm run lint                 # oxlint — passa com 3 warnings tolerados (set-state-in-effect x2, only-export-components x1)
-npm test                     # Vitest — a criar (ver convencoes.md, ADR-005); ainda não existe no repo
+npm run lint                 # oxlint — passa com avisos pré-existentes tolerados (set-state-in-effect, only-export-components), sem erro
+npm test                     # Vitest (ver convencoes.md, ADR-005) — validado: 4 arquivos / 11 testes passando
 ```
 
 O frontend espera a API rodando em `http://localhost:3000` (CORS já habilitado no backend via `cors()`).
+
+## Autenticação — promover um cliente a admin
+
+Não existe fluxo de UI para virar admin (fora de escopo, ver `docs/prd/login-cliente/requirements.md`). Depois de registrar uma conta normalmente pela UI (`/registrar`), promova via SQL direto:
+
+```bash
+docker exec bordeless-postgres psql -U postgres -d bordeless -c "UPDATE clientes SET papel = 'admin' WHERE email = 'seu-email@exemplo.com';"
+```
+
+O token JWT carrega o papel no momento em que é emitido — depois de promover, é preciso **sair e entrar de novo** na UI (ou chamar `POST /auth/login` de novo) pra pegar um token novo já com `papel: admin`. Só então `/admin` libera os formulários de cadastro.
 
 ## Prova de QA (ferramenta obrigatória)
 

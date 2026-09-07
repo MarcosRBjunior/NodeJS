@@ -8,8 +8,8 @@
 
 Projeto de faculdade que também funciona como peça de portfólio técnico. Isso significa duas coisas na prática:
 
-- O critério de "pronto" é rigor de engenharia **demonstrável** (arquitetura em camadas, testes reais, decisões documentadas), não hardening de produção real (não há, hoje, pagamento de verdade, autenticação, ou preocupação de escala multi-tenant).
-- Login de cliente, gestão de estoque real e pagamento real são lacunas conhecidas e aceitas por enquanto — candidatas a entrar como features formais (com `requirements.md` + `test-plan.md` próprios) quando priorizadas.
+- O critério de "pronto" é rigor de engenharia **demonstrável** (arquitetura em camadas, testes reais, decisões documentadas), não hardening de produção real (não há, hoje, pagamento de verdade nem preocupação de escala multi-tenant).
+- Login de cliente com JWT já existe (2026-09-07, ver `docs/prd/login-cliente/`) — checkout exige conta, e `/admin` exige papel admin. Gestão de estoque real e pagamento real seguem como lacunas conhecidas e aceitas por enquanto — candidatas a entrar como features formais (com `requirements.md` + `test-plan.md` próprios) quando priorizadas.
 
 ## Backend — arquitetura em camadas
 
@@ -26,14 +26,16 @@ Duas particularidades do desenho, importantes pra quem for mexer nas rotas:
 
 - **Paginação roda depois do controller.** O controller só monta o query builder (`req.consultaPaginavel`) e chama `next()` — quem de fato clona, ordena, limita/pagina e executa é o middleware genérico `paginar` (`src/middlewares/paginar.js`), reaproveitado em Autores/Editoras/Livros/Vendas.
 - **Injeção de dependência é seletiva.** `emailGateway`/`stockGateway` percorrem `server → app → routes → service` como parâmetros (por isso são fáceis de mockar em teste). A conexão com o banco é um singleton (`obterConexao()`) importado direto em cada arquivo de rota — o banco é sempre real, inclusive em testes de integração/e2e; só os side effects externos (email, estoque) são mockados.
+- **Autenticação é middleware de rota, não parte do fluxo controller→service.** `autenticar` (valida o JWT, popula `req.cliente`) e `exigirAdmin` (checa `req.cliente.papel`) entram na cadeia antes do controller (`router.post('/livros', autenticar, exigirAdmin, controller.cadastrarLivro)`). O controller de vendas lê `req.cliente.id` pra montar `clienteId` — o service nunca confia em um `cliente_id` vindo do corpo da requisição.
 
 ## Frontend — arquitetura
 
-SPA em React + Vite, sem SSR. `App.jsx` define um layout fixo (Header/main/Footer) com 5 rotas: `/`, `/catalogo`, `/livros/:id`, `/carrinho`, `/admin`.
+SPA em React + Vite, sem SSR. `App.jsx` define um layout fixo (Header/main/Footer) com rotas: `/`, `/catalogo`, `/livros/:id`, `/carrinho`, `/login`, `/registrar`, e `/admin` (protegida).
 
 - `pages/*` busca dados e gerencia seu próprio estado de carregamento/erro.
-- `components/*` é puramente apresentacional (recebe tudo via props, exceto `Header`/`BookCard`, que consomem o contexto do carrinho).
+- `components/*` é puramente apresentacional (recebe tudo via props, exceto `Header`/`BookCard`, que consomem os contextos globais).
 - O carrinho vive em Context API + `localStorage` (`CartContext.jsx`) — é estado efêmero de sessão de compra; só vira transação real no backend no momento do checkout (`POST /vendas`, um por item do carrinho).
+- A sessão do cliente vive em Context API + `localStorage` (`AuthContext.jsx`, token + dados públicos do cliente) — `api/client.js` anexa o token em toda requisição automaticamente; `RotaProtegida` redireciona pra `/login` quando a rota exige autenticação (e opcionalmente papel admin) e não há sessão válida.
 - `useLookups` resolve nome de autor/editora no cliente (dois fetches de até 100 registros cada), porque a API não expõe endpoints de agregação/join.
 - Estilização é um único `styles.css` global com custom properties como tokens de tema — sem CSS Modules, Tailwind ou CSS-in-JS.
 
@@ -87,4 +89,12 @@ Formato: Contexto → Decisão → Motivo → Trade-offs reconhecidos → Status
 - **Decisão**: tratar `claude-in-chrome` como a ferramenta de prova de QA para features web, até que um Playwright MCP dedicado seja instalado (se um dia for).
 - **Motivo**: é a única ferramenta de automação de navegador real disponível no ambiente atual; já foi validada nesta sessão (fluxo completo de checkout testado clicando de verdade no navegador, com confirmação via `curl` no banco).
 - **Trade-offs reconhecidos**: não é Playwright "puro" (sem test runner de Playwright, sem gravação de vídeo nativa) — mas satisfaz o requisito central da regra (prova real de navegador, não mock).
+- **Status**: aceito.
+
+### ADR-007 — `jsonwebtoken` como exceção deliberada ao ADR-003
+
+- **Contexto**: a feature de login de cliente (2026-09-07) precisa emitir e validar tokens de sessão. O ADR-003 estabelece preferência por recursos nativos do Node quando cobrem a necessidade — e hash de senha, por exemplo, usa `crypto.scrypt` nativo sem nenhuma lib nova (ver `src/domain/senha.js`). JWT é diferente: dá pra assinar/verificar um token com `crypto.createHmac` nativo sem muito código.
+- **Decisão**: mesmo assim, usar a lib `jsonwebtoken` para gerar/verificar o token, em vez de implementar na mão.
+- **Motivo**: a diferença entre hash de senha e manuseio de token é o que cerca o algoritmo, não o algoritmo em si. `scrypt` é uma primitiva isolada — dado o mesmo input, o mesmo output, sem estado extra pra gerenciar errado. Já um JWT tem casing de borda que é fácil de errar manualmente (comparação de assinatura em tempo não-constante, confusão de algoritmo se o `alg` do header for confiável, expiração checada de forma inconsistente, encoding base64url malfeito) — exatamente o tipo de código de segurança onde uma lib pequena e amplamente auditada vale mais que economizar uma dependência.
+- **Trade-offs reconhecidos**: adiciona uma dependência que, tecnicamente, dava pra evitar — indo contra a letra do ADR-003. Mas não contra o espírito: o ADR-003 já deixa explícito que a preferência por nativo "não é uma regra universal" e vale reavaliar caso a caso. Este é exatamente esse caso — o critério aqui não é "existe alternativa nativa", é "o risco de implementar isso à mão compensa a dependência a menos".
 - **Status**: aceito.
