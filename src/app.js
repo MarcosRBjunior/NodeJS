@@ -12,7 +12,7 @@ export function criarApp({ emailGateway, stockGateway } = {}) {
   app.get('/', (req, res) => {
     res.status(200).json({
       projeto: 'bordeless',
-      rotas: ['/autores', '/editoras', '/livros', '/livros/busca', '/vendas'],
+      rotas: ['/auth/registrar', '/auth/login', '/auth/me', '/autores', '/editoras', '/livros', '/livros/busca', '/vendas'],
     });
   });
 
