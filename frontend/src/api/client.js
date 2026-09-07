@@ -1,15 +1,23 @@
+import { obterToken } from '../utils/tokenStorage';
+
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 async function requisitar(caminho, opcoes = {}) {
+  const token = obterToken();
   const resposta = await fetch(`${BASE_URL}${caminho}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...opcoes,
   });
 
   const corpo = await resposta.json().catch(() => null);
 
   if (!resposta.ok) {
-    throw new Error(corpo?.erro || `Erro ${resposta.status} ao acessar ${caminho}`);
+    const erro = new Error(corpo?.erro || `Erro ${resposta.status} ao acessar ${caminho}`);
+    erro.status = resposta.status;
+    throw erro;
   }
 
   return corpo;
@@ -39,4 +47,8 @@ export const api = {
   cadastrarEditora: (dados) => requisitar('/editoras', { method: 'POST', body: JSON.stringify(dados) }),
 
   registrarVenda: (dados) => requisitar('/vendas', { method: 'POST', body: JSON.stringify(dados) }),
+
+  registrar: (dados) => requisitar('/auth/registrar', { method: 'POST', body: JSON.stringify(dados) }),
+  login: (dados) => requisitar('/auth/login', { method: 'POST', body: JSON.stringify(dados) }),
+  me: () => requisitar('/auth/me'),
 };
