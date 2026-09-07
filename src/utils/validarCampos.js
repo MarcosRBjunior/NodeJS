@@ -13,3 +13,17 @@ export function validarNumeroPositivo(valor, nomeCampo) {
     throw new RequisicaoIncorreta(`${nomeCampo} deve ser um número positivo.`);
   }
 }
+
+const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function validarEmail(email) {
+  if (typeof email !== 'string' || !REGEX_EMAIL.test(email)) {
+    throw new RequisicaoIncorreta('E-mail inválido.');
+  }
+}
+
+export function validarTamanhoMinimo(valor, nomeCampo, tamanho) {
+  if (typeof valor !== 'string' || valor.length < tamanho) {
+    throw new RequisicaoIncorreta(`${nomeCampo} deve ter pelo menos ${tamanho} caracteres.`);
+  }
+}
