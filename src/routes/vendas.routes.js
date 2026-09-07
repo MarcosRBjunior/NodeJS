@@ -3,6 +3,7 @@ import { obterConexao } from '#db/connection.js';
 import { VendasService } from '#services/vendas.service.js';
 import { VendasController } from '#controllers/vendas.controller.js';
 import { paginar } from '#middlewares/paginar.js';
+import { autenticar } from '#middlewares/autenticar.js';
 
 const db = obterConexao();
 
@@ -13,7 +14,7 @@ export default function criarVendasRoutes({ emailGateway, stockGateway } = {}) {
 
   router.get('/vendas', vendasController.listarVendas, paginar({ colunasPermitidas: ['id', 'valor'] }));
   router.get('/vendas/:id', vendasController.buscarVendaPorId);
-  router.post('/vendas', vendasController.cadastrarVenda);
+  router.post('/vendas', autenticar, vendasController.cadastrarVenda);
 
   return router;
 }

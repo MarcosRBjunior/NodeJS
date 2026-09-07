@@ -3,6 +3,8 @@ import { obterConexao } from '#db/connection.js';
 import { EditorasService } from '#services/editoras.service.js';
 import { EditorasController } from '#controllers/editoras.controller.js';
 import { paginar } from '#middlewares/paginar.js';
+import { autenticar } from '#middlewares/autenticar.js';
+import { exigirAdmin } from '#middlewares/exigirAdmin.js';
 
 const db = obterConexao();
 
@@ -13,7 +15,7 @@ export default function criarEditorasRoutes() {
 
   router.get('/editoras', editorasController.listarEditoras, paginar({ colunasPermitidas: ['id', 'nome'] }));
   router.get('/editoras/:id', editorasController.buscarEditoraPorId);
-  router.post('/editoras', editorasController.cadastrarEditora);
+  router.post('/editoras', autenticar, exigirAdmin, editorasController.cadastrarEditora);
 
   return router;
 }

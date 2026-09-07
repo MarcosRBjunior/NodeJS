@@ -27,7 +27,7 @@ export class VendasService {
     return Venda.pegarPeloId(id);
   }
 
-  async registrarVenda({ idLivro, valor, modoPagamento }) {
+  async registrarVenda({ idLivro, valor, modoPagamento, clienteId }) {
     const livro = await Livro.pegarPeloId(idLivro);
     if (!livro) throw new NaoEncontrado('Livro não encontrado');
 
@@ -41,7 +41,7 @@ export class VendasService {
       throw new RequisicaoIncorreta(erro.message);
     }
 
-    const venda = new Venda({ livro_id: idLivro, valor: valorFinal, tipo_pagamento: modoPagamento });
+    const venda = new Venda({ livro_id: idLivro, valor: valorFinal, tipo_pagamento: modoPagamento, cliente_id: clienteId });
     const vendaCriada = await venda.salvar();
 
     const editora = await Editora.pegarPeloId(livro.editora_id);

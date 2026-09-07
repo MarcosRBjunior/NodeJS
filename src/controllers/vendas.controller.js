@@ -23,7 +23,7 @@ export class VendasController {
     validarObrigatorios({ idLivro, valor, modoPagamento }, ['idLivro', 'valor', 'modoPagamento']);
     validarNumeroPositivo(valor, 'valor');
 
-    const venda = await this.vendasService.registrarVenda({ idLivro, valor, modoPagamento });
+    const venda = await this.vendasService.registrarVenda({ idLivro, valor, modoPagamento, clienteId: req.cliente.id });
     res.status(201).send(venda);
   });
 }
