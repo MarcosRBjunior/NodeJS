@@ -1,11 +1,18 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 export function Header() {
   const { totalItens } = useCart();
+  const { cliente, estaAutenticado, logout } = useAuth();
   const navigate = useNavigate();
   const [busca, setBusca] = useState('');
+
+  function aoSair() {
+    logout();
+    navigate('/');
+  }
 
   function aoSubmeterBusca(evento) {
     evento.preventDefault();
@@ -51,6 +58,19 @@ export function Header() {
           <CartIcon />
           {totalItens > 0 && <span className="header__carrinho-badge">{totalItens}</span>}
         </NavLink>
+
+        {estaAutenticado ? (
+          <div className="header__conta">
+            <span className="header__conta-nome">{cliente.nome}</span>
+            <button type="button" className="header__link header__conta-sair" onClick={aoSair}>
+              Sair
+            </button>
+          </div>
+        ) : (
+          <NavLink to="/login" className="header__link">
+            Entrar
+          </NavLink>
+        )}
       </div>
     </header>
   );

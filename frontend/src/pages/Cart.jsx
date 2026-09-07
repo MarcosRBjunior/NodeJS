@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { formatarPreco } from '../utils/formatarPreco';
 import { api } from '../api/client';
 
@@ -22,6 +23,8 @@ const RETULOS_PAGAMENTO = {
 
 export function Cart() {
   const { itens, atualizarQuantidade, removerItem, limparCarrinho, subtotal } = useCart();
+  const { estaAutenticado, logout } = useAuth();
+  const navigate = useNavigate();
   const [modoPagamento, setModoPagamento] = useState('PIX');
   const [processando, setProcessando] = useState(false);
   const [erro, setErro] = useState(null);
@@ -31,6 +34,11 @@ export function Cart() {
   const totalComDesconto = subtotal * (1 - desconto);
 
   async function finalizarCompra() {
+    if (!estaAutenticado) {
+      navigate('/login', { state: { de: '/carrinho' } });
+      return;
+    }
+
     setProcessando(true);
     setErro(null);
     try {
@@ -43,6 +51,11 @@ export function Cart() {
       setConfirmacao({ vendas, totalFinal });
       limparCarrinho();
     } catch (e) {
+      if (e.status === 401) {
+        logout();
+        navigate('/login', { state: { de: '/carrinho' } });
+        return;
+      }
       setErro(e.message);
     } finally {
       setProcessando(false);

@@ -152,6 +152,26 @@ select {
   padding: 1px 6px;
 }
 
+.header__conta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header__conta-nome {
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.header__conta-sair {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
 /* Footer */
 .footer {
   background: var(--cor-marca);
