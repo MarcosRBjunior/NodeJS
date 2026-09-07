@@ -13,13 +13,14 @@ export class LivrosController {
   };
 
   buscarLivroPorFiltro = (req, res, next) => {
-    const { titulo, autor_id, editora_id, minPaginas, maxPaginas } = req.query;
+    const { titulo, autor_id, editora_id, minPaginas, maxPaginas, categoria } = req.query;
     req.consultaPaginavel = this.livrosService.consultarLivrosComFiltro({
       titulo,
       autor_id,
       editora_id,
       minPaginas,
       maxPaginas,
+      categoria,
     });
     next();
   };
@@ -31,11 +32,12 @@ export class LivrosController {
   });
 
   cadastrarLivro = asyncHandler(async (req, res) => {
-    const { titulo, paginas, autor_id, editora_id } = req.body ?? {};
+    const { titulo, paginas, autor_id, editora_id, preco, capa_url, categoria } = req.body ?? {};
     validarObrigatorios({ titulo, paginas, autor_id, editora_id }, ['titulo', 'paginas', 'autor_id', 'editora_id']);
     validarNumeroPositivo(paginas, 'paginas');
+    if (preco !== undefined) validarNumeroPositivo(preco, 'preco');
 
-    const livro = await this.livrosService.cadastrarLivro({ titulo, paginas, autor_id, editora_id });
+    const livro = await this.livrosService.cadastrarLivro({ titulo, paginas, autor_id, editora_id, preco, capa_url, categoria });
     res.status(201).send(livro);
   });
 }

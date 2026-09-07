@@ -67,9 +67,9 @@ test/
 | Editoras | GET | `/editoras/:id` | Busca uma editora pelo id |
 | Editoras | POST | `/editoras` | Cadastra uma editora (`nome`, `cidade`, `email`) |
 | Livros | GET | `/livros` | Lista livros (paginação) |
-| Livros | GET | `/livros/busca` | Filtra por `titulo`, `autor_id`, `editora_id`, `minPaginas`, `maxPaginas` (paginação) |
+| Livros | GET | `/livros/busca` | Filtra por `titulo`, `autor_id`, `editora_id`, `minPaginas`, `maxPaginas`, `categoria` (paginação) |
 | Livros | GET | `/livros/:id` | Busca um livro pelo id |
-| Livros | POST | `/livros` | Cadastra um livro (`titulo`, `paginas`, `autor_id`, `editora_id`) |
+| Livros | POST | `/livros` | Cadastra um livro (`titulo`, `paginas`, `autor_id`, `editora_id`, `preco` opcional, `capa_url` opcional, `categoria` opcional) |
 | Vendas | GET | `/vendas` | Lista vendas (paginação) |
 | Vendas | GET | `/vendas/:id` | Busca uma venda pelo id |
 | Vendas | POST | `/vendas` | Registra uma venda (`idLivro`, `valor`, `modoPagamento`) — aplica desconto, consulta estoque e notifica a editora por email |

@@ -19,7 +19,10 @@ CREATE TABLE IF NOT EXISTS livros (
     titulo VARCHAR(255) NOT NULL,
     paginas INTEGER NOT NULL,
     autor_id INTEGER NOT NULL REFERENCES autores(id),
-    editora_id INTEGER NOT NULL REFERENCES editoras(id)
+    editora_id INTEGER NOT NULL REFERENCES editoras(id),
+    preco NUMERIC(10, 2) NOT NULL DEFAULT 0,
+    capa_url VARCHAR(500),
+    categoria VARCHAR(50)
 );
 
 DO $$ BEGIN
