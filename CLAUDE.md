@@ -8,6 +8,7 @@ API REST de livraria (Node/Express/Knex/Postgres) + frontend React/Vite para a l
 - [Convenções](docs/projeto/convencoes.md) — padrões de código, nomenclatura, convenção de teste
 - [Ambiente](docs/projeto/ambiente.md) — comandos testados de instalar, rodar, testar e buildar
 - [PRDs por tarefa](docs/prd/README.md) — requisitos e test plan de cada feature/fix
+- [Backlog](docs/prd/backlog.md) — features candidatas ainda não iniciadas
 - [Aprendizados](docs/aprendizados/README.md) — registrado ao fechar cada sessão de trabalho
 
 ## Regras do processo
