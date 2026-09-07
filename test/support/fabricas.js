@@ -1,3 +1,5 @@
+import { gerarToken } from '#utils/jwt.js';
+
 export async function criarAutor(db, overrides = {}) {
   const [autor] = await db('autores')
     .insert({ nome: 'Autor Teste', nacionalidade: 'Brasileiro', ...overrides })
@@ -26,4 +28,25 @@ export async function criarLivro(db, overrides = {}) {
     })
     .returning('*');
   return livro;
+}
+
+export async function criarCliente(db, overrides = {}) {
+  const [cliente] = await db('clientes')
+    .insert({
+      nome: 'Cliente Teste',
+      email: `cliente-${Date.now()}-${Math.random().toString(36).slice(2)}@teste.com`,
+      senha_hash: 'hash-fake-nao-usado-em-teste',
+      papel: 'cliente',
+      ...overrides,
+    })
+    .returning('*');
+  return cliente;
+}
+
+export async function criarAdmin(db, overrides = {}) {
+  return criarCliente(db, { papel: 'admin', ...overrides });
+}
+
+export function tokenPara(cliente) {
+  return gerarToken(cliente);
 }
