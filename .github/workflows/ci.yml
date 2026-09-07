@@ -30,6 +30,7 @@ jobs:
           echo "DATABASE_URL=postgres://postgres:postgres@localhost:5432/test" >> .env.test
           echo "PORT=3001" >> .env.test
           echo "NODE_ENV=test" >> .env.test
+          echo "JWT_SECRET=ci-test-secret" >> .env.test
       - run: npm run test:unit
 
   test-integration-end-to-end:
@@ -67,5 +68,6 @@ jobs:
           echo "DATABASE_URL=postgres://postgres:postgres@localhost:5432/test" >> .env.test
           echo "PORT=3001" >> .env.test
           echo "NODE_ENV=test" >> .env.test
+          echo "JWT_SECRET=ci-test-secret" >> .env.test
       - run: npm run test:integration
       - run: npm run test:e2e

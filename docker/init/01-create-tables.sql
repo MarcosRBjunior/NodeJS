@@ -31,9 +31,24 @@ EXCEPTION
     WHEN duplicate_object THEN NULL;
 END $$;
 
+DO $$ BEGIN
+    CREATE TYPE papel_cliente AS ENUM ('cliente', 'admin');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS clientes (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    senha_hash VARCHAR(255) NOT NULL,
+    papel papel_cliente NOT NULL DEFAULT 'cliente'
+);
+
 CREATE TABLE IF NOT EXISTS vendas (
     id SERIAL PRIMARY KEY,
     livro_id INTEGER NOT NULL REFERENCES livros(id),
     valor NUMERIC(10, 2) NOT NULL,
-    tipo_pagamento tipo_pagamento NOT NULL
+    tipo_pagamento tipo_pagamento NOT NULL,
+    cliente_id INTEGER REFERENCES clientes(id)
 );
