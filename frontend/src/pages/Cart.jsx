@@ -22,7 +22,7 @@ const RETULOS_PAGAMENTO = {
 };
 
 export function Cart() {
-  const { itens, atualizarQuantidade, removerItem, limparCarrinho, subtotal } = useCart();
+  const { itens, atualizarQuantidade, removerItem, subtotal } = useCart();
   const { estaAutenticado, logout } = useAuth();
   const navigate = useNavigate();
   const [modoPagamento, setModoPagamento] = useState('PIX');
@@ -42,20 +42,34 @@ export function Cart() {
     setProcessando(true);
     setErro(null);
     try {
-      const vendas = await Promise.all(
+      const resultados = await Promise.allSettled(
         itens.map((item) =>
           api.registrarVenda({ idLivro: item.id, valor: item.preco * item.quantidade, modoPagamento, quantidade: item.quantidade }),
         ),
       );
-      const totalFinal = vendas.reduce((soma, venda) => soma + Number(venda.valor), 0);
-      setConfirmacao({ vendas, totalFinal });
-      limparCarrinho();
-    } catch (e) {
-      if (e.status === 401) {
+      const linhas = itens.map((item, indice) => ({ item, resultado: resultados[indice] }));
+
+      if (linhas.some(({ resultado }) => resultado.status === 'rejected' && resultado.reason?.status === 401)) {
         logout();
         navigate('/login', { state: { de: '/carrinho' } });
         return;
       }
+
+      const sucessos = linhas.filter(({ resultado }) => resultado.status === 'fulfilled');
+      const falhas = linhas.filter(({ resultado }) => resultado.status === 'rejected');
+
+      // remove do carrinho só o que já foi comprado, pra não recomprar num retry
+      sucessos.forEach(({ item }) => removerItem(item.id));
+
+      if (falhas.length === 0) {
+        const totalFinal = sucessos.reduce((soma, { resultado }) => soma + Number(resultado.value.valor), 0);
+        setConfirmacao({ vendas: sucessos.map(({ resultado }) => resultado.value), totalFinal });
+        return;
+      }
+
+      const titulos = falhas.map(({ item }) => item.titulo).join(', ');
+      setErro(`Não foi possível comprar: ${titulos}. ${falhas[0].resultado.reason.message}`);
+    } catch (e) {
       setErro(e.message);
     } finally {
       setProcessando(false);
