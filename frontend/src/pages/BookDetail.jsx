@@ -32,12 +32,14 @@ export function BookDetail() {
   if (erro) return <p className="estado-erro">Não deu pra carregar esse livro: {erro}</p>;
   if (!livro) return <p className="estado-info">Carregando...</p>;
 
+  const esgotado = livro.estoque_quantidade === 0;
+
   return (
     <section className="detalhe-livro">
       <BookCover capaUrl={livro.capa_url} titulo={livro.titulo} categoria={livro.categoria} className="detalhe-livro__capa" />
 
       <div className="detalhe-livro__info">
-        <CategoryBadge categoria={livro.categoria} />
+        {esgotado ? <span className="badge badge--esgotado">Esgotado</span> : <CategoryBadge categoria={livro.categoria} />}
         <h1>{livro.titulo}</h1>
         {autor && <p className="detalhe-livro__autor">por {autor.nome}</p>}
         <p className="detalhe-livro__preco">{formatarPreco(livro.preco)}</p>
@@ -57,19 +59,22 @@ export function BookDetail() {
           <input
             type="number"
             min="1"
+            max={livro.estoque_quantidade}
             value={quantidade}
-            onChange={(e) => setQuantidade(Math.max(1, Number(e.target.value)))}
+            disabled={esgotado}
+            onChange={(e) => setQuantidade(Math.min(Math.max(1, Number(e.target.value)), livro.estoque_quantidade))}
             aria-label="Quantidade"
           />
           <button
             type="button"
             className="btn btn--primary"
+            disabled={esgotado}
             onClick={() => {
               adicionarItem(livro, quantidade);
               setAdicionado(true);
             }}
           >
-            Adicionar ao carrinho
+            {esgotado ? 'Esgotado' : 'Adicionar ao carrinho'}
           </button>
         </div>
 

@@ -24,12 +24,24 @@ export function CartProvider({ children }) {
   }, [itens]);
 
   function adicionarItem(livro, quantidade = 1) {
+    const limiteEstoque = livro.estoque_quantidade ?? Infinity;
     setItens((atual) => {
       const existente = atual.find((item) => item.id === livro.id);
       if (existente) {
-        return atual.map((item) => (item.id === livro.id ? { ...item, quantidade: item.quantidade + quantidade } : item));
+        const novaQuantidade = Math.min(existente.quantidade + quantidade, limiteEstoque);
+        return atual.map((item) => (item.id === livro.id ? { ...item, quantidade: novaQuantidade, estoqueQuantidade: limiteEstoque } : item));
       }
-      return [...atual, { id: livro.id, titulo: livro.titulo, preco: Number(livro.preco), capa_url: livro.capa_url, quantidade }];
+      return [
+        ...atual,
+        {
+          id: livro.id,
+          titulo: livro.titulo,
+          preco: Number(livro.preco),
+          capa_url: livro.capa_url,
+          quantidade: Math.min(quantidade, limiteEstoque),
+          estoqueQuantidade: limiteEstoque,
+        },
+      ];
     });
   }
 
@@ -38,7 +50,9 @@ export function CartProvider({ children }) {
       removerItem(id);
       return;
     }
-    setItens((atual) => atual.map((item) => (item.id === id ? { ...item, quantidade } : item)));
+    setItens((atual) =>
+      atual.map((item) => (item.id === id ? { ...item, quantidade: Math.min(quantidade, item.estoqueQuantidade ?? Infinity) } : item)),
+    );
   }
 
   function removerItem(id) {

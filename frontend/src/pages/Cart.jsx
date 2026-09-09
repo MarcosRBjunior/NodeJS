@@ -44,7 +44,7 @@ export function Cart() {
     try {
       const vendas = await Promise.all(
         itens.map((item) =>
-          api.registrarVenda({ idLivro: item.id, valor: item.preco * item.quantidade, modoPagamento }),
+          api.registrarVenda({ idLivro: item.id, valor: item.preco * item.quantidade, modoPagamento, quantidade: item.quantidade }),
         ),
       );
       const totalFinal = vendas.reduce((soma, venda) => soma + Number(venda.valor), 0);
@@ -99,6 +99,7 @@ export function Cart() {
               <input
                 type="number"
                 min="1"
+                max={item.estoqueQuantidade}
                 value={item.quantidade}
                 onChange={(e) => atualizarQuantidade(item.id, Number(e.target.value))}
                 aria-label={`Quantidade de ${item.titulo}`}

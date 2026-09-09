@@ -97,6 +97,7 @@ function FormLivro({ autores, editoras, onCriado, onErro }) {
   const [preco, setPreco] = useState('');
   const [capaUrl, setCapaUrl] = useState('');
   const [categoria, setCategoria] = useState('Tecnologia');
+  const [estoqueQuantidade, setEstoqueQuantidade] = useState('');
 
   async function aoSubmeter(evento) {
     evento.preventDefault();
@@ -109,11 +110,13 @@ function FormLivro({ autores, editoras, onCriado, onErro }) {
         preco: preco ? Number(preco) : undefined,
         capa_url: capaUrl || undefined,
         categoria,
+        estoque_quantidade: estoqueQuantidade ? Number(estoqueQuantidade) : undefined,
       });
       setTitulo('');
       setPaginas('');
       setPreco('');
       setCapaUrl('');
+      setEstoqueQuantidade('');
       onCriado(livro);
     } catch (e) {
       onErro(e);
@@ -151,6 +154,13 @@ function FormLivro({ autores, editoras, onCriado, onErro }) {
 
       <input type="number" step="0.01" min="0" placeholder="Preço (R$)" value={preco} onChange={(e) => setPreco(e.target.value)} />
       <input placeholder="URL da capa (opcional)" value={capaUrl} onChange={(e) => setCapaUrl(e.target.value)} />
+      <input
+        type="number"
+        min="0"
+        placeholder="Estoque inicial"
+        value={estoqueQuantidade}
+        onChange={(e) => setEstoqueQuantidade(e.target.value)}
+      />
 
       <button type="submit" className="btn btn--secondary" disabled={!autores.length || !editoras.length}>
         Cadastrar livro
