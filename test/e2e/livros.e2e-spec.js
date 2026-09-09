@@ -47,6 +47,34 @@ describe('Livros E2E', () => {
       assert.strictEqual(resposta.body.length, 1);
     });
 
+    it('deve cadastrar um livro com estoque_quantidade informado', async () => {
+      const autor = await criarAutor(db);
+      const editora = await criarEditora(db);
+      const admin = await criarAdmin(db);
+
+      const resposta = await request(app)
+        .post('/livros')
+        .set('Authorization', `Bearer ${tokenPara(admin)}`)
+        .send({ titulo: 'Com Estoque', paginas: 100, autor_id: autor.id, editora_id: editora.id, estoque_quantidade: 7 });
+
+      assert.strictEqual(resposta.status, 201);
+      assert.strictEqual(resposta.body.estoque_quantidade, 7);
+    });
+
+    it('deve cadastrar um livro com estoque_quantidade zero quando não informado', async () => {
+      const autor = await criarAutor(db);
+      const editora = await criarEditora(db);
+      const admin = await criarAdmin(db);
+
+      const resposta = await request(app)
+        .post('/livros')
+        .set('Authorization', `Bearer ${tokenPara(admin)}`)
+        .send({ titulo: 'Sem Estoque Informado', paginas: 100, autor_id: autor.id, editora_id: editora.id });
+
+      assert.strictEqual(resposta.status, 201);
+      assert.strictEqual(resposta.body.estoque_quantidade, 0);
+    });
+
     it('deve buscar livros por trecho do título e faixa de páginas', async () => {
       const autor = await criarAutor(db);
       const editora = await criarEditora(db);
@@ -103,6 +131,19 @@ describe('Livros E2E', () => {
         .post('/livros')
         .set('Authorization', `Bearer ${tokenPara(admin)}`)
         .send({ titulo: 'Livro Vazio', paginas: 0, autor_id: autor.id, editora_id: editora.id });
+
+      assert.strictEqual(resposta.status, 400);
+    });
+
+    it('deve retornar 400 ao cadastrar livro com estoque_quantidade negativo', async () => {
+      const autor = await criarAutor(db);
+      const editora = await criarEditora(db);
+      const admin = await criarAdmin(db);
+
+      const resposta = await request(app)
+        .post('/livros')
+        .set('Authorization', `Bearer ${tokenPara(admin)}`)
+        .send({ titulo: 'Estoque Negativo', paginas: 100, autor_id: autor.id, editora_id: editora.id, estoque_quantidade: -1 });
 
       assert.strictEqual(resposta.status, 400);
     });

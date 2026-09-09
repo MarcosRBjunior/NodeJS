@@ -27,11 +27,12 @@ describe('Vendas E2E', () => {
     const resposta = await request(app)
       .post('/vendas')
       .set('Authorization', `Bearer ${tokenPara(cliente)}`)
-      .send({ idLivro: livro.id, valor: 100, modoPagamento: 'PIX' });
+      .send({ idLivro: livro.id, valor: 100, modoPagamento: 'PIX', quantidade: 1 });
 
     // assert
     assert.strictEqual(resposta.status, 201);
     assert.strictEqual(resposta.body.cliente_id, cliente.id);
+    assert.strictEqual(resposta.body.quantidade, 1);
     assert.strictEqual(emailGateway.enviar.mock.callCount(), 1);
   });
 
@@ -39,7 +40,7 @@ describe('Vendas E2E', () => {
     const livro = await criarLivro(db);
     const app = criarAppDeTeste();
 
-    const resposta = await request(app).post('/vendas').send({ idLivro: livro.id, valor: 100, modoPagamento: 'PIX' });
+    const resposta = await request(app).post('/vendas').send({ idLivro: livro.id, valor: 100, modoPagamento: 'PIX', quantidade: 1 });
 
     assert.strictEqual(resposta.status, 401);
   });
@@ -61,7 +62,20 @@ describe('Vendas E2E', () => {
     const resposta = await request(app)
       .post('/vendas')
       .set('Authorization', `Bearer ${tokenPara(cliente)}`)
-      .send({ idLivro: livro.id, valor: 'abc', modoPagamento: 'PIX' });
+      .send({ idLivro: livro.id, valor: 'abc', modoPagamento: 'PIX', quantidade: 1 });
+
+    assert.strictEqual(resposta.status, 400);
+  });
+
+  it('deve retornar 400 ao registrar venda com quantidade não inteira', async () => {
+    const livro = await criarLivro(db);
+    const cliente = await criarCliente(db);
+    const app = criarAppDeTeste();
+
+    const resposta = await request(app)
+      .post('/vendas')
+      .set('Authorization', `Bearer ${tokenPara(cliente)}`)
+      .send({ idLivro: livro.id, valor: 100, modoPagamento: 'PIX', quantidade: 1.5 });
 
     assert.strictEqual(resposta.status, 400);
   });
@@ -73,23 +87,38 @@ describe('Vendas E2E', () => {
     const resposta = await request(app)
       .post('/vendas')
       .set('Authorization', `Bearer ${tokenPara(cliente)}`)
-      .send({ idLivro: 999999, valor: 100, modoPagamento: 'PIX' });
+      .send({ idLivro: 999999, valor: 100, modoPagamento: 'PIX', quantidade: 1 });
 
     assert.strictEqual(resposta.status, 404);
   });
 
   it('deve retornar 409 ao registrar venda de um livro sem estoque disponível', async () => {
-    const livro = await criarLivro(db);
+    const livro = await criarLivro(db, { estoque_quantidade: 0 });
     const cliente = await criarCliente(db);
-    const stockGateway = { consultarEstoque: mock.fn(async () => false) };
-    const app = criarAppDeTeste({ stockGateway });
+    const app = criarAppDeTeste();
 
     const resposta = await request(app)
       .post('/vendas')
       .set('Authorization', `Bearer ${tokenPara(cliente)}`)
-      .send({ idLivro: livro.id, valor: 100, modoPagamento: 'PIX' });
+      .send({ idLivro: livro.id, valor: 100, modoPagamento: 'PIX', quantidade: 1 });
 
     assert.strictEqual(resposta.status, 409);
+  });
+
+  it('deve retornar 409 ao pedir mais unidades do que o estoque disponível', async () => {
+    const livro = await criarLivro(db, { estoque_quantidade: 2 });
+    const cliente = await criarCliente(db);
+    const app = criarAppDeTeste();
+
+    const resposta = await request(app)
+      .post('/vendas')
+      .set('Authorization', `Bearer ${tokenPara(cliente)}`)
+      .send({ idLivro: livro.id, valor: 100, modoPagamento: 'PIX', quantidade: 3 });
+
+    assert.strictEqual(resposta.status, 409);
+
+    const livroAtualizado = await db('livros').where({ id: livro.id }).first();
+    assert.strictEqual(livroAtualizado.estoque_quantidade, 2);
   });
 
   it('deve listar as vendas registradas', async () => {
@@ -99,7 +128,7 @@ describe('Vendas E2E', () => {
     await request(app)
       .post('/vendas')
       .set('Authorization', `Bearer ${tokenPara(cliente)}`)
-      .send({ idLivro: livro.id, valor: 100, modoPagamento: 'PIX' });
+      .send({ idLivro: livro.id, valor: 100, modoPagamento: 'PIX', quantidade: 1 });
 
     const resposta = await request(app).get('/vendas');
 

@@ -22,6 +22,7 @@ export async function criarLivro(db, overrides = {}) {
     .insert({
       titulo: 'Livro Teste',
       paginas: 100,
+      estoque_quantidade: 100,
       ...overrides,
       autor_id: autorId,
       editora_id: editoraId,
