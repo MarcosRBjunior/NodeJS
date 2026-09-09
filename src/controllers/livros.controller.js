@@ -1,6 +1,6 @@
 import { NaoEncontrado } from '#erros/NaoEncontrado.js';
 import { asyncHandler } from '#middlewares/asyncHandler.js';
-import { validarObrigatorios, validarNumeroPositivo } from '#utils/validarCampos.js';
+import { validarObrigatorios, validarNumeroPositivo, validarInteiroNaoNegativo } from '#utils/validarCampos.js';
 
 export class LivrosController {
   constructor(livrosService) {
@@ -32,12 +32,22 @@ export class LivrosController {
   });
 
   cadastrarLivro = asyncHandler(async (req, res) => {
-    const { titulo, paginas, autor_id, editora_id, preco, capa_url, categoria } = req.body ?? {};
+    const { titulo, paginas, autor_id, editora_id, preco, capa_url, categoria, estoque_quantidade } = req.body ?? {};
     validarObrigatorios({ titulo, paginas, autor_id, editora_id }, ['titulo', 'paginas', 'autor_id', 'editora_id']);
     validarNumeroPositivo(paginas, 'paginas');
     if (preco !== undefined) validarNumeroPositivo(preco, 'preco');
+    if (estoque_quantidade !== undefined) validarInteiroNaoNegativo(estoque_quantidade, 'estoque_quantidade');
 
-    const livro = await this.livrosService.cadastrarLivro({ titulo, paginas, autor_id, editora_id, preco, capa_url, categoria });
+    const livro = await this.livrosService.cadastrarLivro({
+      titulo,
+      paginas,
+      autor_id,
+      editora_id,
+      preco,
+      capa_url,
+      categoria,
+      estoque_quantidade,
+    });
     res.status(201).send(livro);
   });
 }

@@ -1,6 +1,6 @@
 import { NaoEncontrado } from '#erros/NaoEncontrado.js';
 import { asyncHandler } from '#middlewares/asyncHandler.js';
-import { validarObrigatorios, validarNumeroPositivo } from '#utils/validarCampos.js';
+import { validarObrigatorios, validarNumeroPositivo, validarInteiroPositivo } from '#utils/validarCampos.js';
 
 export class VendasController {
   constructor(vendasService) {
@@ -19,11 +19,12 @@ export class VendasController {
   });
 
   cadastrarVenda = asyncHandler(async (req, res) => {
-    const { idLivro, valor, modoPagamento } = req.body ?? {};
-    validarObrigatorios({ idLivro, valor, modoPagamento }, ['idLivro', 'valor', 'modoPagamento']);
+    const { idLivro, valor, modoPagamento, quantidade } = req.body ?? {};
+    validarObrigatorios({ idLivro, valor, modoPagamento, quantidade }, ['idLivro', 'valor', 'modoPagamento', 'quantidade']);
     validarNumeroPositivo(valor, 'valor');
+    validarInteiroPositivo(quantidade, 'quantidade');
 
-    const venda = await this.vendasService.registrarVenda({ idLivro, valor, modoPagamento, clienteId: req.cliente.id });
+    const venda = await this.vendasService.registrarVenda({ idLivro, valor, modoPagamento, quantidade, clienteId: req.cliente.id });
     res.status(201).send(venda);
   });
 }

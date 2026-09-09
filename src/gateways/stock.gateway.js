@@ -1,6 +1,10 @@
 export class StockGateway {
-  async consultarEstoque(livroId) {
-    console.log(`[Estoque API] Consultando estoque do livro ${livroId}...`);
-    return true;
+  async decrementarEstoque(conexao, livroId, quantidade) {
+    const linhasAfetadas = await conexao('livros')
+      .where({ id: livroId })
+      .andWhere('estoque_quantidade', '>=', quantidade)
+      .decrement('estoque_quantidade', quantidade);
+
+    return linhasAfetadas > 0;
   }
 }

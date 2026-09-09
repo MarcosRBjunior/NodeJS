@@ -19,13 +19,13 @@ export class RepositorioBase {
     return this.db(this.tabela).where({ id }).first();
   }
 
-  async salvar() {
+  async salvar(conexao = this.constructor.db) {
     const dados = {};
     for (const campo of this.constructor.camposInseriveis) {
       dados[campo] = this[campo];
     }
 
-    const [registro] = await this.constructor.db(this.constructor.tabela).insert(dados).returning('*');
+    const [registro] = await conexao(this.constructor.tabela).insert(dados).returning('*');
     Object.assign(this, registro);
     return registro;
   }

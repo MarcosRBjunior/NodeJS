@@ -11,6 +11,7 @@ export class VendasService {
     Venda.configurarDB(databaseConnection);
     Livro.configurarDB(databaseConnection);
     Editora.configurarDB(databaseConnection);
+    this.db = databaseConnection;
     this.emailGateway = emailGateway;
     this.stockGateway = stockGateway;
   }
@@ -27,12 +28,9 @@ export class VendasService {
     return Venda.pegarPeloId(id);
   }
 
-  async registrarVenda({ idLivro, valor, modoPagamento, clienteId }) {
+  async registrarVenda({ idLivro, valor, modoPagamento, quantidade, clienteId }) {
     const livro = await Livro.pegarPeloId(idLivro);
     if (!livro) throw new NaoEncontrado('Livro não encontrado');
-
-    const temEstoque = await this.stockGateway.consultarEstoque(idLivro);
-    if (!temEstoque) throw new Conflito('livro sem estoque disponível');
 
     let valorFinal;
     try {
@@ -41,8 +39,13 @@ export class VendasService {
       throw new RequisicaoIncorreta(erro.message);
     }
 
-    const venda = new Venda({ livro_id: idLivro, valor: valorFinal, tipo_pagamento: modoPagamento, cliente_id: clienteId });
-    const vendaCriada = await venda.salvar();
+    const vendaCriada = await this.db.transaction(async (trx) => {
+      const temEstoque = await this.stockGateway.decrementarEstoque(trx, idLivro, quantidade);
+      if (!temEstoque) throw new Conflito('livro sem estoque disponível');
+
+      const venda = new Venda({ livro_id: idLivro, valor: valorFinal, tipo_pagamento: modoPagamento, cliente_id: clienteId, quantidade });
+      return venda.salvar(trx);
+    });
 
     const editora = await Editora.pegarPeloId(livro.editora_id);
     await this.emailGateway.enviar({

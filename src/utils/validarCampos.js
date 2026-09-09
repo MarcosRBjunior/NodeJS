@@ -14,6 +14,18 @@ export function validarNumeroPositivo(valor, nomeCampo) {
   }
 }
 
+export function validarInteiroPositivo(valor, nomeCampo) {
+  if (!Number.isInteger(valor) || valor <= 0) {
+    throw new RequisicaoIncorreta(`${nomeCampo} deve ser um número inteiro positivo.`);
+  }
+}
+
+export function validarInteiroNaoNegativo(valor, nomeCampo) {
+  if (!Number.isInteger(valor) || valor < 0) {
+    throw new RequisicaoIncorreta(`${nomeCampo} deve ser um número inteiro maior ou igual a zero.`);
+  }
+}
+
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function validarEmail(email) {

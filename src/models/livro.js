@@ -6,9 +6,19 @@ function escaparCoringasLike(valor) {
 
 export default class Livro extends RepositorioBase {
   static tabela = 'livros';
-  static camposInseriveis = ['titulo', 'paginas', 'autor_id', 'editora_id', 'preco', 'capa_url', 'categoria'];
+  static camposInseriveis = ['titulo', 'paginas', 'autor_id', 'editora_id', 'preco', 'capa_url', 'categoria', 'estoque_quantidade'];
 
-  constructor({ id, titulo, paginas, autor_id, editora_id, preco = 0, capa_url = null, categoria = null } = {}) {
+  constructor({
+    id,
+    titulo,
+    paginas,
+    autor_id,
+    editora_id,
+    preco = 0,
+    capa_url = null,
+    categoria = null,
+    estoque_quantidade = 0,
+  } = {}) {
     super();
     this.id = id;
     this.titulo = titulo;
@@ -18,6 +28,7 @@ export default class Livro extends RepositorioBase {
     this.preco = preco;
     this.capa_url = capa_url;
     this.categoria = categoria;
+    this.estoque_quantidade = estoque_quantidade;
   }
 
   static queryComFiltro({ titulo, autor_id, editora_id, minPaginas, maxPaginas, categoria } = {}) {

@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS livros (
     editora_id INTEGER NOT NULL REFERENCES editoras(id),
     preco NUMERIC(10, 2) NOT NULL DEFAULT 0,
     capa_url VARCHAR(500),
-    categoria VARCHAR(50)
+    categoria VARCHAR(50),
+    estoque_quantidade INTEGER NOT NULL DEFAULT 0
 );
 
 DO $$ BEGIN
@@ -50,5 +51,6 @@ CREATE TABLE IF NOT EXISTS vendas (
     livro_id INTEGER NOT NULL REFERENCES livros(id),
     valor NUMERIC(10, 2) NOT NULL,
     tipo_pagamento tipo_pagamento NOT NULL,
-    cliente_id INTEGER REFERENCES clientes(id)
+    cliente_id INTEGER REFERENCES clientes(id),
+    quantidade INTEGER NOT NULL DEFAULT 1
 );
