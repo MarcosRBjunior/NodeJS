@@ -37,7 +37,7 @@ npm test                    # os três em sequência
 
 `.env`/`.env.test` também precisam de `JWT_SECRET` (qualquer string em dev/teste; troque por um segredo forte em produção) — ver `.env.example`.
 
-Resultado esperado (validado na FASE 1, antes da feature de login): `npm test` → 29 testes, 28 pass, 1 `todo` intencional (validação de e-mail de editora), 0 fail. Depois da feature de login de cliente, a suíte cresceu para 78 testes (unit + integration + e2e), continua 0 fail.
+Resultado esperado (validado na FASE 1, antes da feature de login): `npm test` → 29 testes, 28 pass, 1 `todo` intencional (validação de e-mail de editora), 0 fail. Depois da feature de login de cliente, a suíte cresceu para 78 testes (unit + integration + e2e), continua 0 fail. Depois da feature de estoque real (2026-09-08), cresceu para 85 testes (11 unit + 23 integration + 51 e2e), continua 0 fail (o mesmo `todo` intencional).
 
 ## Frontend
 
@@ -71,5 +71,16 @@ Fluxo típico de verificação usado nesta sessão (checkout de carrinho): naveg
 
 ## Estado observado do banco na FASE 1
 
-- Banco `bordeless`: 6 livros de seed (3 Tecnologia, 3 Idiomas), sem fotos de capa (`capa_url` null — aguardando fotos reais do usuário).
+- Banco `bordeless`: 6 livros de seed (3 Tecnologia, 3 Idiomas), sem fotos de capa (`capa_url` null — aguardando fotos reais do usuário). Desde a feature de estoque real (2026-09-08), esses 6 livros têm `estoque_quantidade = 10` cada (backfill manual via SQL, ver `docs/prd/estoque-real/requirements.md`).
 - Banco `test`: existe (criado via `TEMPLATE`), populado/truncado conforme os testes rodam.
+
+## Aplicando mudança de schema num Postgres de dev já rodando
+
+Como não há migrations (Knex é só query builder, ver ADR-001), mudança de schema é: editar `docker/init/01-create-tables.sql` (pra ambientes novos) **e** aplicar o `ALTER TABLE` equivalente direto no container já rodando, nos dois bancos que existem separados (`bordeless` e `test` — o segundo não é recriado automaticamente a partir do primeiro depois do boot inicial):
+
+```bash
+docker exec bordeless-postgres psql -U postgres -d bordeless -c "ALTER TABLE ..."
+docker exec bordeless-postgres psql -U postgres -d test -c "ALTER TABLE ..."
+```
+
+Usado assim na feature de estoque real (2026-09-08) pra adicionar `livros.estoque_quantidade` e `vendas.quantidade` sem `docker compose down -v`.
