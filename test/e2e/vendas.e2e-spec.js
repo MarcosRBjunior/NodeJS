@@ -80,6 +80,19 @@ describe('Vendas E2E', () => {
     assert.strictEqual(resposta.status, 400);
   });
 
+  it('deve retornar 400 (não 500) ao registrar venda com quantidade acima do limite do Postgres', async () => {
+    const livro = await criarLivro(db);
+    const cliente = await criarCliente(db);
+    const app = criarAppDeTeste();
+
+    const resposta = await request(app)
+      .post('/vendas')
+      .set('Authorization', `Bearer ${tokenPara(cliente)}`)
+      .send({ idLivro: livro.id, valor: 100, modoPagamento: 'PIX', quantidade: 99999999999 });
+
+    assert.strictEqual(resposta.status, 400);
+  });
+
   it('deve retornar 404 ao registrar venda para um livro inexistente', async () => {
     const cliente = await criarCliente(db);
     const app = criarAppDeTeste();

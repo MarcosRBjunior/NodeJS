@@ -14,15 +14,17 @@ export function validarNumeroPositivo(valor, nomeCampo) {
   }
 }
 
+const INTEIRO_POSTGRES_MAXIMO = 2147483647; // limite de um integer (int4) no Postgres
+
 export function validarInteiroPositivo(valor, nomeCampo) {
-  if (!Number.isInteger(valor) || valor <= 0) {
-    throw new RequisicaoIncorreta(`${nomeCampo} deve ser um número inteiro positivo.`);
+  if (!Number.isInteger(valor) || valor <= 0 || valor > INTEIRO_POSTGRES_MAXIMO) {
+    throw new RequisicaoIncorreta(`${nomeCampo} deve ser um número inteiro positivo até ${INTEIRO_POSTGRES_MAXIMO}.`);
   }
 }
 
 export function validarInteiroNaoNegativo(valor, nomeCampo) {
-  if (!Number.isInteger(valor) || valor < 0) {
-    throw new RequisicaoIncorreta(`${nomeCampo} deve ser um número inteiro maior ou igual a zero.`);
+  if (!Number.isInteger(valor) || valor < 0 || valor > INTEIRO_POSTGRES_MAXIMO) {
+    throw new RequisicaoIncorreta(`${nomeCampo} deve ser um número inteiro entre 0 e ${INTEIRO_POSTGRES_MAXIMO}.`);
   }
 }
 

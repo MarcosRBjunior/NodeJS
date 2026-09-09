@@ -3,6 +3,7 @@ import { RequisicaoIncorreta } from '#erros/RequisicaoIncorreta.js';
 
 const CODIGOS_ERRO_POSTGRES = {
   '22P02': () => new RequisicaoIncorreta('Um ou mais parâmetros fornecidos são inválidos.'),
+  '22003': () => new RequisicaoIncorreta('Um ou mais parâmetros fornecidos estão fora do intervalo permitido.'),
   '23502': () => new RequisicaoIncorreta('Um campo obrigatório não foi preenchido.'),
   '23503': () => new RequisicaoIncorreta('O registro referenciado não existe.'),
   '23505': () => new RequisicaoIncorreta('Já existe um registro com esses dados.'),

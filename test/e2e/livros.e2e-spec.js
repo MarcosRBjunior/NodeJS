@@ -148,6 +148,19 @@ describe('Livros E2E', () => {
       assert.strictEqual(resposta.status, 400);
     });
 
+    it('deve retornar 400 (não 500) ao cadastrar livro com estoque_quantidade acima do limite do Postgres', async () => {
+      const autor = await criarAutor(db);
+      const editora = await criarEditora(db);
+      const admin = await criarAdmin(db);
+
+      const resposta = await request(app)
+        .post('/livros')
+        .set('Authorization', `Bearer ${tokenPara(admin)}`)
+        .send({ titulo: 'Estoque Estourado', paginas: 100, autor_id: autor.id, editora_id: editora.id, estoque_quantidade: 99999999999 });
+
+      assert.strictEqual(resposta.status, 400);
+    });
+
     it('deve retornar 404 ao buscar um livro inexistente', async () => {
       const resposta = await request(app).get('/livros/999999');
       assert.strictEqual(resposta.status, 404);
