@@ -38,6 +38,12 @@ EXCEPTION
     WHEN duplicate_object THEN NULL;
 END $$;
 
+DO $$ BEGIN
+    CREATE TYPE status_pagamento AS ENUM ('pendente', 'aprovado', 'recusado');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+
 CREATE TABLE IF NOT EXISTS clientes (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(255) NOT NULL,
@@ -52,5 +58,7 @@ CREATE TABLE IF NOT EXISTS vendas (
     valor NUMERIC(10, 2) NOT NULL,
     tipo_pagamento tipo_pagamento NOT NULL,
     cliente_id INTEGER REFERENCES clientes(id),
-    quantidade INTEGER NOT NULL DEFAULT 1
+    quantidade INTEGER NOT NULL DEFAULT 1,
+    status status_pagamento NOT NULL DEFAULT 'pendente',
+    motivo_recusa VARCHAR(255)
 );

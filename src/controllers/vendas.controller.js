@@ -27,4 +27,9 @@ export class VendasController {
     const venda = await this.vendasService.registrarVenda({ idLivro, valor, modoPagamento, quantidade, clienteId: req.cliente.id });
     res.status(201).send(venda);
   });
+
+  confirmarPagamento = asyncHandler(async (req, res) => {
+    const venda = await this.vendasService.confirmarPagamento(req.params.id, req.cliente.id);
+    res.status(200).send(venda);
+  });
 }

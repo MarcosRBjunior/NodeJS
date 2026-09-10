@@ -29,4 +29,9 @@ export class RepositorioBase {
     Object.assign(this, registro);
     return registro;
   }
+
+  static async atualizarPeloId(id, dados, conexao = this.db) {
+    const [registro] = await conexao(this.tabela).where({ id }).update(dados).returning('*');
+    return registro;
+  }
 }
