@@ -47,6 +47,7 @@ export const api = {
   cadastrarEditora: (dados) => requisitar('/editoras', { method: 'POST', body: JSON.stringify(dados) }),
 
   registrarVenda: (dados) => requisitar('/vendas', { method: 'POST', body: JSON.stringify(dados) }),
+  confirmarPagamento: (id) => requisitar(`/vendas/${id}/confirmar-pagamento`, { method: 'POST' }),
 
   registrar: (dados) => requisitar('/auth/registrar', { method: 'POST', body: JSON.stringify(dados) }),
   login: (dados) => requisitar('/auth/login', { method: 'POST', body: JSON.stringify(dados) }),

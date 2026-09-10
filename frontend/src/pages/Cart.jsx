@@ -27,8 +27,9 @@ export function Cart() {
   const navigate = useNavigate();
   const [modoPagamento, setModoPagamento] = useState('PIX');
   const [processando, setProcessando] = useState(false);
+  const [confirmandoPagamento, setConfirmandoPagamento] = useState(false);
   const [erro, setErro] = useState(null);
-  const [confirmacao, setConfirmacao] = useState(null);
+  const [resultados, setResultados] = useState(null);
 
   const desconto = DESCONTOS[modoPagamento] ?? 0;
   const totalComDesconto = subtotal * (1 - desconto);
@@ -42,50 +43,117 @@ export function Cart() {
     setProcessando(true);
     setErro(null);
     try {
-      const resultados = await Promise.allSettled(
+      const criacoes = await Promise.allSettled(
         itens.map((item) =>
           api.registrarVenda({ idLivro: item.id, valor: item.preco * item.quantidade, modoPagamento, quantidade: item.quantidade }),
         ),
       );
-      const linhas = itens.map((item, indice) => ({ item, resultado: resultados[indice] }));
+      const linhasCriacao = itens.map((item, indice) => ({ item, resultado: criacoes[indice] }));
 
-      if (linhas.some(({ resultado }) => resultado.status === 'rejected' && resultado.reason?.status === 401)) {
+      if (linhasCriacao.some(({ resultado }) => resultado.status === 'rejected' && resultado.reason?.status === 401)) {
         logout();
         navigate('/login', { state: { de: '/carrinho' } });
         return;
       }
 
-      const sucessos = linhas.filter(({ resultado }) => resultado.status === 'fulfilled');
-      const falhas = linhas.filter(({ resultado }) => resultado.status === 'rejected');
+      const criadasComSucesso = linhasCriacao.filter(({ resultado }) => resultado.status === 'fulfilled');
+      const falhasCriacao = linhasCriacao.filter(({ resultado }) => resultado.status === 'rejected');
 
-      // remove do carrinho só o que já foi comprado, pra não recomprar num retry
-      sucessos.forEach(({ item }) => removerItem(item.id));
+      // remove do carrinho só o que já virou venda pendente, pra não recomprar num retry
+      criadasComSucesso.forEach(({ item }) => removerItem(item.id));
 
-      if (falhas.length === 0) {
-        const totalFinal = sucessos.reduce((soma, { resultado }) => soma + Number(resultado.value.valor), 0);
-        setConfirmacao({ vendas: sucessos.map(({ resultado }) => resultado.value), totalFinal });
+      if (criadasComSucesso.length === 0) {
+        const titulos = falhasCriacao.map(({ item }) => item.titulo).join(', ');
+        setErro(`Não foi possível comprar: ${titulos}. ${falhasCriacao[0].resultado.reason.message}`);
         return;
       }
 
-      const titulos = falhas.map(({ item }) => item.titulo).join(', ');
-      setErro(`Não foi possível comprar: ${titulos}. ${falhas[0].resultado.reason.message}`);
+      setConfirmandoPagamento(true);
+      const confirmacoes = await Promise.allSettled(
+        criadasComSucesso.map(({ resultado }) => api.confirmarPagamento(resultado.value.id)),
+      );
+      const linhasConfirmacao = criadasComSucesso.map(({ item }, indice) => ({ item, resultado: confirmacoes[indice] }));
+
+      if (linhasConfirmacao.some(({ resultado }) => resultado.status === 'rejected' && resultado.reason?.status === 401)) {
+        logout();
+        navigate('/login', { state: { de: '/carrinho' } });
+        return;
+      }
+
+      const resultadosConfirmacao = linhasConfirmacao.map(({ item, resultado }) => {
+        if (resultado.status === 'fulfilled') {
+          const venda = resultado.value;
+          return venda.status === 'aprovado'
+            ? { titulo: item.titulo, status: 'aprovado', valor: Number(venda.valor) }
+            : { titulo: item.titulo, status: 'recusado', motivo: venda.motivo_recusa };
+        }
+        return { titulo: item.titulo, status: 'recusado', motivo: resultado.reason?.message ?? 'não foi possível confirmar o pagamento' };
+      });
+
+      const resultadosFalhaCriacao = falhasCriacao.map(({ item, resultado }) => ({
+        titulo: item.titulo,
+        status: 'recusado',
+        motivo: resultado.reason?.message ?? 'não foi possível criar a venda',
+      }));
+
+      setResultados([...resultadosConfirmacao, ...resultadosFalhaCriacao]);
     } catch (e) {
       setErro(e.message);
     } finally {
       setProcessando(false);
+      setConfirmandoPagamento(false);
     }
   }
 
-  if (confirmacao) {
+  if (resultados) {
+    const aprovados = resultados.filter((r) => r.status === 'aprovado');
+    const recusados = resultados.filter((r) => r.status === 'recusado');
+    const totalPago = aprovados.reduce((soma, r) => soma + r.valor, 0);
+
     return (
       <section className="secao secao--estreita">
-        <h1 className="secao__titulo">Compra confirmada!</h1>
-        <p className="estado-sucesso">
-          {confirmacao.vendas.length} item(ns) comprado(s) — total pago: <strong>{formatarPreco(confirmacao.totalFinal)}</strong>
-        </p>
+        <h1 className="secao__titulo">Resultado da compra</h1>
+
+        {aprovados.length > 0 && (
+          <div className="estado-sucesso">
+            <p>
+              {aprovados.length} item(ns) aprovado(s) — total pago: <strong>{formatarPreco(totalPago)}</strong>
+            </p>
+            <ul>
+              {aprovados.map((r, indice) => (
+                <li key={indice}>
+                  {r.titulo} — {formatarPreco(r.valor)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {recusados.length > 0 && (
+          <div className="estado-erro">
+            <p>{recusados.length} item(ns) recusado(s):</p>
+            <ul>
+              {recusados.map((r, indice) => (
+                <li key={indice}>
+                  {r.titulo} — {r.motivo}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <Link to="/catalogo" className="btn btn--primary">
           Continuar comprando
         </Link>
+      </section>
+    );
+  }
+
+  if (confirmandoPagamento) {
+    return (
+      <section className="secao secao--estreita">
+        <h1 className="secao__titulo">Processando pagamento...</h1>
+        <p>Aguarde enquanto confirmamos o pagamento da sua compra.</p>
       </section>
     );
   }
