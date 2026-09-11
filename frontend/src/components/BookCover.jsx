@@ -1,6 +1,6 @@
 const CATEGORIA_GRADIENTE = {
-  Tecnologia: 'linear-gradient(135deg, #1B1F3B 0%, #2B3A67 100%)',
-  Idiomas: 'linear-gradient(135deg, #0F5E56 0%, #2EC4B6 100%)',
+  Tecnologia: 'linear-gradient(135deg, #4B2FAE 0%, #4C3AA6 100%)',
+  Idiomas: 'linear-gradient(135deg, #0D7A6B 0%, #2EC4B6 100%)',
 };
 
 function iniciais(titulo = '') {
